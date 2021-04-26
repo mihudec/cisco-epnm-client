@@ -1,0 +1,101 @@
+[
+  {
+    "string": "MD=CISCO_EPNM!ND=asr9k-cluster.cisco.com",
+    "data": [
+      {
+        "type": "MD",
+        "values": [
+          {
+            "key": null,
+            "value": "CISCO_EPNM"
+          }
+        ]
+      },
+      {
+        "type": "ND",
+        "values": [
+          {
+            "key": null,
+            "value": "asr9k-cluster.cisco.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "string": "MD=CISCO_EPNM!ND=asr9k-cluster.cisco.com!EQ=name=subslot 0/3 transceiver 0;partnumber=ONS-SI-155-SR-MM",
+    "data": [
+      {
+        "type": "MD",
+        "values": [
+          {
+            "key": null,
+            "value": "CISCO_EPNM"
+          }
+        ]
+      },
+      {
+        "type": "ND",
+        "values": [
+          {
+            "key": null,
+            "value": "asr9k-cluster.cisco.com"
+          }
+        ]
+      },
+      {
+        "type": "EQ",
+        "values": [
+          {
+            "key": "name",
+            "value": "subslot 0/3 transceiver 0"
+          },
+          {
+            "key": "partnumber",
+            "value": "ONS-SI-155-SR-MM"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "string": "MD=CISCO_EPNM!ND=ME3800-Automation!CTP=name=GigabitEthernet0/2;lr=lr-ip;ADDRESS=192.168.100.31",
+    "data": [
+      {
+        "type": "MD",
+        "values": [
+          {
+            "key": null,
+            "value": "CISCO_EPNM"
+          }
+        ]
+      },
+      {
+        "type": "ND",
+        "values": [
+          {
+            "key": null,
+            "value": "ME3800-Automation"
+          }
+        ]
+      },
+      {
+        "type": "CTP",
+        "values": [
+          {
+            "key": "name",
+            "value": "GigabitEthernet0/2"
+          },
+          {
+            "key": "lr",
+            "value": "lr-ip"
+          },
+          {
+            "key": "ADDRESS",
+            "value": "192.168.100.31"
+          }
+        ]
+      }
+    ]
+  }
+]

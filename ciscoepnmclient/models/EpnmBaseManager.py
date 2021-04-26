@@ -1,0 +1,2 @@
+class EpnmBaseManager(object):
+    pass
