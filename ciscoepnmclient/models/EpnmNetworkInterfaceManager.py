@@ -2,14 +2,64 @@ from requests.models import Response
 from ciscoepnmclient.CiscoEpnmClientBase import CiscoEpnmClientBase
 from ciscoepnmclient.models.EpnmBaseManager import EpnmBaseManager
 from ciscoepnmclient.utils.filters import filter_network_interface
+from ciscoepnmclient.utils.checks import *
 from ciscoepnmclient.utils.fdn import *
-from ciscoepnmclient.models.EpnmServiceTemplates import *
+from ciscoepnmclient.utils import get_logger
+from ciscoepnmclient.models.EpnmTemplates import *
 
+
+
+def get_network_interfaces(self, fdn: str = None, params: dict = None):
+        if any([fdn]) and params is None:
+            params = {}
+        # self.logger.debug(f"FDN: {fdn} Params: {params}")
+        path = "/restconf/data/v1/cisco-service-network:network-interface"
+        if fdn is not None:
+            if params is None:
+                params = {}
+            params.update({"fdn": fdn})
+        network_interfaces = self.get_data(self.get(path=path, params=params))
+        if network_interfaces is None:
+            self.logger.info("Received 0 elements.")
+        else:
+            network_interfaces = network_interfaces["ni.network-interface"]
+            if isinstance(network_interfaces, dict):
+                network_interfaces = [network_interfaces]
+        return network_interfaces
 
 class EpnmNetworkInterfaceManager(EpnmBaseManager):
 
+    PROVISION_PATH = "/restconf/operations/v1/cisco-service-activation:provision-service"
+    TERMINATE_PATH = "/restconf/operations/v1/cisco-service-activation:terminate-service"
+    GET_PATH = "/restconf/data/v1/cisco-service-network:network-interface"
+
+
     def __init__(self, client: CiscoEpnmClientBase):
         self.client = client
+
+    def get_response_data(self, response: Response):
+        data = None
+        try:
+            data = response.json()
+            if data["com.response-message"]["com.data"] != "":
+                data = data["com.response-message"]["com.data"]
+            else:
+                self.logger.info("Response contains no data.")
+        # Hail Mary
+        except Exception as e:
+            data = None
+            self.client.logger.error("Failed to extract data from response.")
+            self.client.logger.debug(f"Failed response text: {response.text}")
+
+    def get_network_interfaces(self, fdn: str = None, params: dict = None):
+        if any([fdn]) and (params is None):
+            params = {}
+        if fdn is not None:
+            params.update({"fdn": fdn})
+        response = self.client.get(path=self.GET_PATH, params=params)
+        data = self.get_response_data(response=response)
+            
+    
 
     def check_interface_exists(self, fdn: str = None, node_name: str = None, physical_interface: str = None):
         network_interfaces = []
@@ -38,17 +88,17 @@ class EpnmNetworkInterfaceManager(EpnmBaseManager):
             self.client.logger.error(
                 "Found multiple candidates for network interface. This should not happen (probably).")
 
-    def create_network_interface(self, data, force_create: bool = False):
-        path = "/restconf/operations/v1/cisco-service-activation:provision-service"
+    def create_network_interface(self, data, force_create: bool = False, confirm: bool = False):
         name = data["sa.service-order-data"]["sa.termination-point-list"]["sa.termination-point-config"]["sa.network-interface-name"]
         # Check if interface name already exists
         interface_exists = None
         # Construct FDN
-        fdn = f"MD=CISCO-EPNM!NI={name}"
+        fdn = f"{FDN_BASE}!NI={name}"
         interface_exists = self.check_interface_exists(fdn=fdn)
         if isinstance(interface_exists, str):
             self.client.logger.warning(
                 f"Network Interface '{name}' already exists. FDN: '{interface_exists}'")
+            interface_exists = True
         elif interface_exists is False:
             # Check if node_name and physical_interface already have NI assigned
             tp_ref_data = fdn_to_dict(
@@ -75,15 +125,27 @@ class EpnmNetworkInterfaceManager(EpnmBaseManager):
                         # Override
                         interface_exists = False
 
+        if interface_exists is True:
+            return False
         if interface_exists is False:
             self.client.logger.info(f"Creating Network Interface Name: {name}")
-            response = self.client.post(path=path, data=data)
+            response = self.client.post(path=self.PROVISION_PATH, data=data)
             if response.status_code == 200:
                 response_data = response.json()
                 if response_data["sa.provision-service-response"]["sa.completion-status"] == "SUBMITTED":
-                    self.client.logger.info("Request successfully SUBMITTED")
+                    request_id = response_data["sa.provision-service-response"]["sa.request-id"]
+                    self.client.logger.info(f"Request successfully SUBMITTED. Request ID: {request_id}")
+                    if confirm:
+                        job_status = self.get_provision_status(request_id=request_id)
+                        return job_status
+                    else:
+                        return True
+                else:
+                    self.client.logger.warning(
+                        f"Did not receive confirmation of successful request submission. Response: {response.text}")
+                    return False
 
-    def delete_network_interface(self, fdn: str, force_delete: bool = False):
+    def delete_network_interface(self, fdn: str, force_delete: bool = False, confirm: bool = False):
         """Method for deleting UNI Interfaces
 
         Args:
@@ -116,7 +178,6 @@ class EpnmNetworkInterfaceManager(EpnmBaseManager):
                             f"FORCE DELETE: Trying to force deletion of NI FDN: {fdn}")
                         interface_exists = True
 
-        path = "/restconf/operations/v1/cisco-service-activation:terminate-service"
         uni_terminate_req = {
             "sa.ni-ref": f"{fdn}",
             "sa.service-order-data": {
@@ -125,27 +186,77 @@ class EpnmNetworkInterfaceManager(EpnmBaseManager):
 
             }
         }
+        if interface_exists is False:
+            return False
         if interface_exists:
             self.client.logger.debug(f"Deleting Network Interface FDN: {fdn}")
-            response = self.client.post(path=path, data=uni_terminate_req)
+            response = self.client.post(
+                path=self.TERMINATE_PATH, data=uni_terminate_req)
             if response.status_code == 200:
                 response_data = response.json()
                 if response_data["sa.terminate-service-response"]["sa.completion-status"] == "SUBMITTED":
-                    self.client.logger.info("Request successfully SUBMITTED")
-            print(response.status_code)
-            print(response.text)
+                    request_id = response_data["sa.terminate-service-response"]["sa.request-id"]
+                    self.client.logger.info(f"Request successfully SUBMITTED. Request ID: {request_id}")
+                    if confirm:
+                        job_status = self.get_terminate_status(request_id=request_id)
+                        return job_status
+                    else:
+                        return True
+                else:
+                    self.client.logger.warning(
+                        f"Did not receive confirmation of successful request submission. Response: {response.text}")
+                    return False
+
+    def get_provision_status(self, request_id: str, wait: int = 10, max_retries: int = 12):
+        params = {"request-id": request_id}
+        self.client.logger.info(
+            f"Getting status for provisioning job. Request ID: {request_id}")
+        result, message, response = self.client.poller_get(
+            path=self.PROVISION_PATH, check=check_provision_uni, params=params, wait=wait, max_retries=max_retries)
+        if result is True:
+            self.client.logger.info(
+                f"Sucessfully created NI. RequestID: {request_id}")
+            job_status = True
+        elif result is False:
+            self.client.logger.error(
+                f"Failed to create NI. RequestID: {request_id}")
+            job_status = False
+        else:
+            self.client.logger.warning(
+                f"Unhandled Error: Did not receive status in specified timeout. RequestID: {request_id}")
+        return job_status
+
+    def get_terminate_status(self, request_id: str, wait: int = 10, max_retries: int = 12):
+        params = {"request-id": request_id}
+        job_status = None
+        self.client.logger.info(
+            f"Getting status for termination job. Request ID: {request_id}")
+        result, message, response = self.client.poller_get(
+            path=self.TERMINATE_PATH, check=check_terminate_uni, params=params, wait=wait, max_retries=max_retries)
+        if result is True:
+            self.client.logger.info(
+                f"Sucessfully deleted NI. RequestID: {request_id}")
+            job_status = True
+        elif result is False:
+            self.client.logger.error(
+                f"Failed to delete NI. RequestID: {request_id}")
+            job_status = False
+        else:
+            self.client.logger.warning(
+                f"Unhandled Error: Did not receive status in specified timeout. RequestID: {request_id}")
+        return job_status
 
     def get_create_payload(self,
-                    name: str,
-                    node_name: str,
-                    physical_interface: str,
-                    service_customer: str = "Infrastructure",
-                    mtu: int = 1522,
-                    description: str = None,
-                    bundling: bool = False,
-                    service_multiplexing: bool = False
-                    ):
-        service_header = EpnmServiceTemplateHeader(
+                           name: str,
+                           node_name: str,
+                           physical_interface: str,
+                           service_customer: str = "Infrastructure",
+                           mtu: int = 1522,
+                           description: str = None,
+                           bundling: bool = False,
+                           service_multiplexing: bool = False
+                           ):
+        service_header = EpnmServiceHeaderTemplate(
             service_customer=service_customer,
             service_type="carrier-ethernet-vpn",
             service_sub_type="UNI",

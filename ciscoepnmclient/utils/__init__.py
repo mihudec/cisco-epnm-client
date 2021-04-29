@@ -1,0 +1,1 @@
+from ciscoepnmclient.utils.get_logger import get_logger

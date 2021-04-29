@@ -76,8 +76,9 @@ class CiscoEpnmClientBase(object):
         result, message, response = (None, None, None)
         retries = 0
         while result is None:
+            self.logger.debug(f"Attempt: {retries}/{max_retries}")
             response = self.get(path=path, params=params)
-            finished, message= check(response)
+            result, message = check(response)
             if isinstance(result, bool):
                 break
             else:
@@ -86,7 +87,12 @@ class CiscoEpnmClientBase(object):
                     self.logger.warning("Maximum number of retries reached.")
                     break
                 else:
+                    self.logger.debug(f"Waiting for {wait} seconds")
                     time.sleep(wait)
+        if result is True:
+            self.logger.debug(f"Stopping poller. Result: {result} Message: '{message}'")
+        elif result is False:
+            self.logger.error(f"Stopping poller. Result: {result} Message: '{message}'")
         return (result, message, response)
 
 
@@ -106,13 +112,15 @@ class CiscoEpnmClientBase(object):
                     else:
                         self.logger.debug("Response contains no data.")
                     return inner_data 
-                    
+            except KeyError as e:
+                self.logger.error(f"KeyError while trying to unpack data from response. Error: {repr(e)}")
             except Exception as e:
                 self.logger.error(f"Encountered unhandled exception: {repr(e)}")
 
             return response.json()
+
         elif response.status_code == 400:
-            self.logger.error(f"Bad Request. Error: {response.text}")
+            self.logger.error(f"BadRequest. Error: {response.text}")
         elif response.status_code == 401:
             self.logger.error("Authentication Error. Check username and password.")
             return response

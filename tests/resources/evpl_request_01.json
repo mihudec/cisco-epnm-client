@@ -1,0 +1,75 @@
+{
+  "sa.service-order-data": {
+    "sa.customer-ref": "MD=CISCO_EPNM!CUSTOMER=Infrastructure",
+    "sa.service-type": "carrier-ethernet-vpn",
+    "sa.service-subtype": "EVPL",
+    "sa.service-name": "API_TEST_SERVICE_001",
+    "sa.service-description": "API_TEST_SERVICE_001",
+    "sa.service-activate": true,
+    "sa.ce-data": {
+      "sa.ce-vlan-id-preservation": false,
+      "sa.ce-vlan-cos-preservation": false,
+      "sa.mtu-size": 1522,
+      "sa.enable-cfm": true,
+      "sa.ccm-interval": "1 sec",
+      "sa.bundling": false
+    },
+    "sa.termination-point-list": {
+      "sa.termination-point-config": [
+        {
+          "sa.tp-ref": "MD=CISCO_EPNM!ND=POC-D-903.test.local!FTP=name=GigabitEthernet0/0/7;lr=lr-gigabit-ethernet",
+          "sa.directionality": "source",
+          "sa.network-interface-ref": "MD=CISCO_EPNM!NI=API_D_UNI_007",
+          "sa.ce-data": {
+            "sa.qinq-data": {
+              "sa.match-type": "dot1q",
+              "sa.vlan-id-list": "100"
+            }
+          }
+        },
+        {
+          "sa.tp-ref": "MD=CISCO_EPNM!ND=POC-E-903.test.local!FTP=name=GigabitEthernet0/0/7;lr=lr-gigabit-ethernet",
+          "sa.directionality": "sink",
+          "sa.network-interface-ref": "MD=CISCO_EPNM!NI=API_E_UNI_007",
+          "sa.ce-data": {
+            "sa.qinq-data": {
+              "sa.match-type": "dot1q",
+              "sa.vlan-id-list": "100"
+            }
+          }
+        }
+      ]
+    },
+    "sa.network-interface-list": {
+      "sa.network-interface": [
+        {
+          "sa.ref": "MD=CISCO_EPNM!NI=API_D_UNI_007",
+          "sa.operation": "update",
+          "sa.ce-data": {
+            "sa.activate": true,
+            "sa.mtu": 1522,
+            "sa.bundling": false,
+            "sa.service-multiplexing": true,
+            "sa.enable-link-oam": false
+          }
+        },
+        {
+          "sa.ref": "MD=CISCO_EPNM!NI=API_E_UNI_007",
+          "sa.operation": "update",
+          "sa.ce-data": {
+            "sa.activate": true,
+            "sa.mtu": 1522,
+            "sa.bundling": false,
+            "sa.service-multiplexing": true,
+            "sa.enable-link-oam": false
+          }
+        }
+      ]
+    },
+    "sa.forwarding-path": {
+      "sa.pseudowire-settings": {
+        "sa.enable-control-word": true
+      }
+    }
+  }
+}

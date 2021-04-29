@@ -6,10 +6,11 @@ def jprint(obj, indent=2):
     except Exception:
         print(obj)
 
-def get_line_rate(physical_interface: str):
+def get_linerate(physical_interface: str):
     if physical_interface.startswith("Gi"):
         return "lr-gigabit-ethernet"
     elif physical_interface.startswith("Te"):
         return "lr-ten-gigabit-ethernet"
     elif physical_interface.startswith("Hu"):
         return "lr-hundred-gigabit-ethernet"
+
