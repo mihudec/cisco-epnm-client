@@ -16,7 +16,7 @@ class CiscoEpnmClientBase(object):
         self.password = password
         self.verify_ssl = verify_ssl
         self.verbosity = verbosity
-        self.logger = get_logger(name="EPNM", verbosity=self.verbosity)
+        self.logger = get_logger(name="EPNM", verbosity=self.verbosity, with_threads=True)
         self.logger.info(msg="Initializing EPNM Client")
         self.session = None
 

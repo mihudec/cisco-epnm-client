@@ -254,7 +254,8 @@ class EpnmNetworkInterfaceManager(EpnmBaseManager):
                            mtu: int = 1522,
                            description: str = None,
                            bundling: bool = False,
-                           service_multiplexing: bool = False
+                           service_multiplexing: bool = False,
+                           auto_negotiation: bool = None
                            ):
         service_header = EpnmServiceHeaderTemplate(
             service_customer=service_customer,
@@ -274,6 +275,7 @@ class EpnmNetworkInterfaceManager(EpnmBaseManager):
             activate=True,
             mtu=mtu,
             bundling=bundling,
+            auto_negotiation=auto_negotiation,
             service_multiplexing=service_multiplexing,
             enable_link_oam=False
 
@@ -285,7 +287,7 @@ class EpnmNetworkInterfaceManager(EpnmBaseManager):
             "sa.termination-point-config": termination_point.get_payload(create_network_interface=True)
         }
         payload["sa.service-order-data"]["sa.network-interface-list"] = {
-            "sa.network-interface": network_interface.get_payload(create=True)
+            "sa.network-interface": network_interface.get_payload(action="create")
         }
 
         return payload

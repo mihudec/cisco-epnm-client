@@ -13,7 +13,25 @@ def build_evpl_service(
     service_name: str,
     service_description: str,
     vlan_id: str,
-):
+) -> EpnmEvplServiceTemplate:
+    """Wrapper function for creating EVPL Service provisioning payload. 
+        Uses some default values 
+
+    Args:
+        a_node_name (str): Hostname of node A
+        a_node_physical_interface (str): Physical interface name on node A
+        a_uni_name (str): Name of the UNI on node A
+        z_node_name (str): Hostname of node Z
+        z_node_physical_interface (str): Physical interface name on node Z
+        z_uni_name (str): Name of the UNI on node Z
+        service_customer (str): Customer name
+        service_name (str): Service name
+        service_description (str): Service Description
+        vlan_id (str): String representation of VLAN ID
+
+    Returns:
+        [type]: EpnmEvplServiceTemplate instance
+    """ 
     # 
     mtu = 1522
 

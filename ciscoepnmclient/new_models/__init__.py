@@ -1,0 +1,1 @@
+from ciscoepnmclient.new_models.EpnmBaseModel import EpnmBaseModel

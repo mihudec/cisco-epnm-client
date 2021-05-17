@@ -9,9 +9,11 @@ from ciscoepnmclient.models.EpnmTemplates import *
 
 class EpnmServiceManager(EpnmBaseManager):
 
+    
     PROVISION_PATH = "/restconf/operations/v1/cisco-service-activation:provision-service"
     TERMINATE_PATH = "/restconf/operations/v1/cisco-service-activation:terminate-service"
     GET_PATH = "/restconf/data/v1/cisco-service-network:virtual-connection"
+    RESYNC_PATH = "/restconf/operations/v1/cisco-service-activation:resync-service"
 
     def __init__(self, client: CiscoEpnmClientBase):
         self.client = client
@@ -23,7 +25,7 @@ class EpnmServiceManager(EpnmBaseManager):
             if data["com.response-message"]["com.data"] != "":
                 data = data["com.response-message"]["com.data"]
             else:
-                self.client.logger.info("Response contains no data.")
+                self.client.logger.debug("Response contains no data.")
                 data = None
         # Hail Mary
         except Exception as e:
@@ -160,12 +162,16 @@ class EpnmServiceManager(EpnmBaseManager):
                     f"Did not receive confirmation of successful request submission. Response: {response.text}")
                 return False
 
-    def get_provision_status(self, request_id: str, wait: int = 10, max_retries: int = 12):
+    def resync_service(self, data: str):
+        pass
+
+    def get_provision_status(self, request_id: str, wait: int = 10, max_retries: int = 30):
         params = {"request-id": request_id}
         self.client.logger.info(
             f"Getting status for provisioning job. Request ID: {request_id}")
         result, message, response = self.client.poller_get(
             path=self.PROVISION_PATH, check=check_provision_service, params=params, wait=wait, max_retries=max_retries)
+        job_status = False
         if result is True:
             self.client.logger.info(
                 f"Sucessfully created Service. RequestID: {request_id}")
@@ -179,13 +185,14 @@ class EpnmServiceManager(EpnmBaseManager):
                 f"Unhandled Error: Did not receive status in specified timeout. RequestID: {request_id}")
         return job_status
 
-    def get_terminate_status(self, request_id: str, wait: int = 10, max_retries: int = 12):
+    def get_terminate_status(self, request_id: str, wait: int = 10, max_retries: int = 30):
         params = {"request-id": request_id}
         job_status = None
         self.client.logger.info(
             f"Getting status for termination job. Request ID: {request_id}")
         result, message, response = self.client.poller_get(
             path=self.TERMINATE_PATH, check=check_terminate_service, params=params, wait=wait, max_retries=max_retries)
+        job_status = False
         if result is True:
             self.client.logger.info(
                 f"Sucessfully deleted Service. RequestID: {request_id}")

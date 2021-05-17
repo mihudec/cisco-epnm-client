@@ -1,0 +1,1 @@
+from ciscoepnmclient.serializers.EpnmBaseSerializer import EpnmBaseSerializer

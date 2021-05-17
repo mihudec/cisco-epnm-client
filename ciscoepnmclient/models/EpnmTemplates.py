@@ -48,7 +48,7 @@ class EpnmQinqDataTemplate(EpnmRequestTemplateBase):
         if self.vlan_cos is not None:
             payload["sa.vlan-cos"] = self.vlan_cos
         if self.inner_vlan_id_list is not None:
-            payload["sa.inner-vlan-id0list"] = self.inner_vlan_id_list
+            payload["sa.inner-vlan-id-list"] = self.inner_vlan_id_list
         if self.inner_vlan_cos is not None:
             payload["sa.inner-vlan-cos"] = self.inner_vlan_cos
         if self.ether_type is not None:
